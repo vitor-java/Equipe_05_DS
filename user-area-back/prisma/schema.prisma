@@ -43,3 +43,73 @@ model Task {
   @@index([priorityId])
   @@map("tasks")
 }
+
+enum UserRole {
+  STUDENT
+  STAFF
+  ADMIN
+}
+
+model User {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  keycloakId  String       @unique
+  name        String
+  email       String
+  birthDate   DateTime?    @db.Date
+  role        UserRole     @default(STUDENT)
+  photoUrl    String?
+  links       ProfileLink[]
+  experiences Experience[]
+  projects    Project[]
+  vehicles    Vehicle[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("users")
+}
+
+model ProfileLink {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  label  String
+  url    String
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("profile_links")
+}
+
+model Experience {
+  id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  description String
+  position    Int    @default(0)
+  userId      String @db.Uuid
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("experiences")
+}
+
+model Project {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  description String?
+  url         String?
+  userId      String  @db.Uuid
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("projects")
+}
+
+model Vehicle {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  plate  String @unique
+  model  String
+  color  String
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("vehicles")
+}

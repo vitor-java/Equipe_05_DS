@@ -1,4 +1,5 @@
 export enum AccessRole {
   ADMIN = 'ADMIN',
-  USER = 'USER',
+  STAFF = 'STAFF',
+  STUDENT = 'STUDENT',
 }

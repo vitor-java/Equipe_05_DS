@@ -16,13 +16,21 @@
         "containerId": "user-area",
         "attributes": {}
       },
-      {
-        "name": "sys_user-area-users",
-        "description": "Acesso padrão (AccessRole.USER)",
+      { 
+        "name": "sys_user-area-staff",
+        "description": "Servidores (AccessRole.STAFF)",
         "composite": false,
         "clientRole": false,
         "containerId": "user-area",
-        "attributes": {}
+        "attributes": {} 
+      },
+      { 
+        "name": "sys_user-area-student",
+        "description": "Estudantes (AccessRole.STUDENT)",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "user-area",
+        "attributes": {} 
       },
       {
         "name": "offline_access",
@@ -79,24 +87,41 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["default-roles-user-area", "sys_user-area-admin", "sys_user-area-users"],
+      "realmRoles": ["default-roles-user-area", "sys_user-area-admin"],
       "groups": []
     },
     {
-      "username": "user",
+      "username": "aluno",
       "enabled": true,
       "emailVerified": true,
-      "firstName": "User",
+      "firstName": "Aluno",
       "lastName": "Test",
-      "email": "user@dev.local",
+      "email": "aluno@dev.local",
       "credentials": [
         {
           "type": "password",
-          "value": "user",
+          "value": "aluno",
           "temporary": false
         }
       ],
-      "realmRoles": ["default-roles-user-area", "sys_user-area-users"],
+      "realmRoles": ["default-roles-user-area", "sys_user-area-student"],
+      "groups": []
+    },
+    {
+      "username": "servidor",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Servidor",
+      "lastName": "Test",
+      "email": "servidor@dev.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "servidor",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["default-roles-user-area", "sys_user-area-staff"],
       "groups": []
     }
   ],

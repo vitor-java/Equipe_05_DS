@@ -22,7 +22,8 @@ export const ADMIN_ONLY_LINKS: string[] = [Links.TEAM];
  * em cada ação (`<Can roles={[...]}>`).
  */
 export enum Roles {
-  USERS = 'sys_user-area-users',
+  STUDENT = 'sys_user-area-student',
+  STAFF = 'sys_user-area-staff',
   ADMIN = 'sys_user-area-admin',
 }
 
@@ -31,7 +32,7 @@ export enum Roles {
  * explícito para não depender de composite role no Keycloak — o match do
  * `RequireAuth` é "tem ao menos uma destas".
  */
-export const ALL_ROLES: Roles[] = [Roles.USERS, Roles.ADMIN];
+export const ALL_ROLES: Roles[] = [Roles.STUDENT, Roles.STAFF, Roles.ADMIN];
 
 /** Roles que podem criar e editar conteúdo. */
 export const WRITE_ROLES: Roles[] = [Roles.ADMIN];

@@ -1,6 +1,8 @@
 import type { AccessRole } from './access-role.enum';
 
 export interface CurrentUser {
-  userId?: string;
+  userId: string;
   role: AccessRole;
+  name?: string;
+  email?: string;
 }

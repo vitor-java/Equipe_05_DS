@@ -19,6 +19,9 @@ interface KeycloakTokenPayload extends JWTPayload {
   // `azp` (authorized party) = client que solicitou o token. O Keycloak costuma
   // colocar o clientId aqui e deixar `aud` como "account", então validamos os dois.
   azp?: string;
+  name?: string;
+  email?: string;
+  preferred_username?: string;
   realm_access?: { roles?: string[] };
 }
 
@@ -29,8 +32,14 @@ interface KeycloakTokenPayload extends JWTPayload {
  */
 const REALM_ROLE_TO_ACCESS_ROLE: Record<string, AccessRole> = {
   'sys_user-area-admin': AccessRole.ADMIN,
-  'sys_user-area-users': AccessRole.USER,
+  'sys_user-area-staff': AccessRole.STAFF,
+  'sys_user-area-student': AccessRole.STUDENT,
 };
+
+/**
+ * Para hierarquizar as ROLES.
+ */
+const ROLE_PRECEDENCE = [AccessRole.ADMIN, AccessRole.STAFF, AccessRole.STUDENT];
 
 @Injectable()
 export class KeycloakIdentitySource implements IdentitySource {
@@ -101,9 +110,15 @@ export class KeycloakIdentitySource implements IdentitySource {
       throw new AccessDeniedException('Usuário sem papel reconhecido pelo sistema.');
     }
 
+    if (!payload.sub) {
+      throw new UnauthorizedException('Token sem identificador de usuário.');
+    }
+
     return {
       userId: payload.sub,
       role,
+      name: payload.name ?? payload.preferred_username,
+      email: payload.email,
     };
   }
 
@@ -132,18 +147,12 @@ export class KeycloakIdentitySource implements IdentitySource {
     return value;
   }
 
+
   private resolveRole(payload: KeycloakTokenPayload): AccessRole | null {
     const realmRoles = payload.realm_access?.roles ?? [];
     const matched = realmRoles
       .map((r) => REALM_ROLE_TO_ACCESS_ROLE[r])
       .filter((r): r is AccessRole => r !== undefined);
-
-    if (matched.length === 0) {
-      return null;
-    }
-
-    // Precedência por privilégio: ADMIN > USER.
-    if (matched.includes(AccessRole.ADMIN)) return AccessRole.ADMIN;
-    return AccessRole.USER;
+    return ROLE_PRECEDENCE.find((r) => matched.includes(r)) ?? null;
   }
 }
