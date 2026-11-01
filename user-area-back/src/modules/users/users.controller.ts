@@ -2,8 +2,8 @@ import { Body, Controller, Get, Patch } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { CurrentUser } from '@/common/auth/current-user.interface';
 import { GetCurrentUser } from '@/common/auth/decorators/current-user.decorator';
-import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UsersService } from './users.service';
 
 @ApiTags('Users')
 @ApiBearerAuth()

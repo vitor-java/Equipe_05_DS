@@ -13,7 +13,7 @@ const httpUrl = z
 
 export const UpdateProfileSchema = z.object({
   birthDate: z.string().date().nullable().optional().describe('YYYY-MM-DD'),
-  
+
   links: z
     .array(z.object({ label: z.string().min(1).max(50), url: httpUrl }))
     .max(10)

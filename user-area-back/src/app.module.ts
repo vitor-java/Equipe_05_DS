@@ -8,8 +8,11 @@ import { validateEnv } from './config/env.validation';
 import keycloakConfig from './config/keycloak.config';
 import swaggerConfig from './config/swagger.config';
 import { PrismaModule } from './database/prisma.module';
+import { AlertsModule } from './modules/alerts/alerts.module';
 import { HealthModule } from './modules/health/health.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { TaskModule } from './modules/task/task.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -22,6 +25,9 @@ import { TaskModule } from './modules/task/task.module';
     AuthModule,
     HealthModule,
     TaskModule,
+    UsersModule,
+    AlertsModule,
+    NotificationsModule,
   ],
   providers: [{ provide: APP_PIPE, useClass: ZodValidationPipe }],
 })

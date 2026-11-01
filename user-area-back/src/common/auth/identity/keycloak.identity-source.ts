@@ -147,7 +147,6 @@ export class KeycloakIdentitySource implements IdentitySource {
     return value;
   }
 
-
   private resolveRole(payload: KeycloakTokenPayload): AccessRole | null {
     const realmRoles = payload.realm_access?.roles ?? [];
     const matched = realmRoles

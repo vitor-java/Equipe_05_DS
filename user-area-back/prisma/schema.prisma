@@ -62,6 +62,8 @@ model User {
   experiences Experience[]
   projects    Project[]
   vehicles    Vehicle[]
+  alertsCreated  Alert[]          @relation("AlertsCreated")
+  alertsReceived AlertRecipient[] @relation("AlertsReceived")
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
@@ -112,4 +114,48 @@ model Vehicle {
 
   @@index([userId])
   @@map("vehicles")
+}
+
+enum AlertSeverity {
+  INFO
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum AlertAudience {
+  USERS
+  ALL
+  STUDENTS
+  STAFF
+}
+
+model Alert {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  subject     String
+  message     String
+  severity    AlertSeverity    @default(INFO)
+  audience    AlertAudience    @default(USERS)
+  createdById String           @db.Uuid
+  createdBy   User             @relation("AlertsCreated", fields: [createdById], references: [id])
+  recipients  AlertRecipient[]
+  createdAt   DateTime         @default(now())
+
+  @@index([createdAt])
+  @@index([createdById])
+  @@map("alerts")
+}
+
+model AlertRecipient {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  alertId   String    @db.Uuid
+  alert     Alert     @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  userId    String    @db.Uuid
+  user      User      @relation("AlertsReceived", fields: [userId], references: [id], onDelete: Cascade)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([alertId, userId])
+  @@index([userId, readAt])
+  @@map("alert_recipients")
 }

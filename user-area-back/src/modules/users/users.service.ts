@@ -3,12 +3,11 @@ import type { CurrentUser } from '@/common/auth/current-user.interface';
 import { PrismaService } from '@/database/prisma.service';
 import type { UpdateProfileDto } from './dto/update-profile.dto';
 
-
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Busca o perfil do usuário pós-login e cria no primeiro acesso. */ 
+  /** Busca o perfil do usuário pós-login e cria no primeiro acesso. */
   async getOrCreateMe(user: CurrentUser) {
     return this.prisma.user.upsert({
       where: { keycloakId: user.userId },
@@ -26,6 +25,39 @@ export class UsersService {
       },
       include: { links: true, experiences: true, projects: true, vehicles: true },
     });
+  }
+
+  async resolveUserId(user: CurrentUser): Promise<string> {
+    const existing = await this.prisma.user.findUnique({
+      where: { keycloakId: user.userId },
+      select: { id: true },
+    });
+    if (existing) {
+      return existing.id;
+    }
+
+    const created = await this.prisma.user.upsert({
+      ...this.syncFromToken(user),
+      select: { id: true },
+    });
+    return created.id;
+  }
+
+  private syncFromToken(user: CurrentUser) {
+    return {
+      where: { keycloakId: user.userId },
+      create: {
+        keycloakId: user.userId,
+        name: user.name ?? 'Sem nome',
+        email: user.email ?? '',
+        role: user.role,
+      },
+      update: {
+        name: user.name ?? undefined,
+        email: user.email ?? undefined,
+        role: user.role,
+      },
+    };
   }
 
   async updateMe(user: CurrentUser, dto: UpdateProfileDto) {
@@ -96,5 +128,4 @@ export class UsersService {
 
     return this.getOrCreateMe(user);
   }
-  
 }
