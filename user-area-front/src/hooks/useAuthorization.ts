@@ -76,7 +76,7 @@ export function useAuthorization(): Authorization {
       roles,
       hasRole,
       isAdmin: hasRole(Roles.ADMIN),
-      isReadOnly: hasRole(Roles.USERS) && !hasRole(Roles.ADMIN),
+      isReadOnly: !hasRole(Roles.ADMIN),
     };
     // Recalcula quando o token muda (login/refresh).
   }, [auth.user]);

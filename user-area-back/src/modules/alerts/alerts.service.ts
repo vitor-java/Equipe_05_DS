@@ -11,9 +11,9 @@ import type { CreateAlertDto } from './dto/create-alert.dto';
 /** Quantos destinatários aparecem no resumo de cada alerta do histórico. */
 const RECIPIENTS_PREVIEW_SIZE = 5;
 /** Máximo de resultados no autocomplete de destinatários. */
-const RECIPIENT_SEARCH_LIMIT = 10;
+const RECIPIENT_SEARCH_LIMIT = 5;
 
-/** Audiência coletiva → role dos destinatários (`undefined` = todos os usuários). */
+/** Audiência coletiva : role dos destinatários (`undefined` = todos os usuários). */
 const AUDIENCE_TO_ROLE: Record<'ALL' | 'STUDENTS' | 'STAFF', UserRole | undefined> = {
   ALL: undefined,
   STUDENTS: 'STUDENT',
@@ -32,7 +32,17 @@ export class AlertsService {
   /** Emite um alerta: cria o alerta e uma notificação pendente para cada destinatário. */
   async create(admin: CurrentUser, dto: CreateAlertDto) {
     const createdById = await this.usersService.resolveUserId(admin);
-    const recipientIds = await this.resolveRecipientIds(dto);
+
+    let recipientIds: string[] = [];
+    if (dto.audience === 'USERS') {
+      recipientIds = await this.resolveRecipientIds(dto);
+    } else {
+      const role = AUDIENCE_TO_ROLE[dto.audience];
+      const count = await this.prisma.user.count({ where: role ? { role } : {} });
+      if (count === 0) {
+        throw new BadRequestException('Nenhum usuário encontrado para a audiência selecionada.');
+      }
+    }
 
     const alert = await this.prisma.alert.create({
       data: {
@@ -41,7 +51,9 @@ export class AlertsService {
         severity: dto.severity,
         audience: dto.audience,
         createdById,
-        recipients: { createMany: { data: recipientIds.map((userId) => ({ userId })) } },
+        ...(dto.audience === 'USERS' && recipientIds.length > 0
+          ? { recipients: { createMany: { data: recipientIds.map((userId) => ({ userId })) } } }
+          : {}),
       },
       include: { _count: { select: { recipients: true } } },
     });
@@ -53,7 +65,7 @@ export class AlertsService {
       severity: alert.severity,
       audience: alert.audience,
       createdAt: alert.createdAt,
-      recipientsCount: alert._count.recipients,
+      recipientsCount: dto.audience === 'USERS' ? alert._count.recipients : 'Massa / Global',
     };
   }
 
@@ -81,24 +93,46 @@ export class AlertsService {
       alerts.length === 0
         ? []
         : await this.prisma.alertRecipient.groupBy({
-            by: ['alertId'],
-            where: { alertId: { in: alerts.map((a) => a.id) }, readAt: { not: null } },
-            _count: { _all: true },
-          });
+          by: ['alertId'],
+          where: { alertId: { in: alerts.map((a) => a.id) }, readAt: { not: null } },
+          _count: { _all: true },
+        });
     const readByAlert = new Map(readCounts.map((row) => [row.alertId, row._count._all]));
 
-    const items = alerts.map((alert) => ({
-      id: alert.id,
-      subject: alert.subject,
-      message: alert.message,
-      severity: alert.severity,
-      audience: alert.audience,
-      createdAt: alert.createdAt,
-      createdBy: alert.createdBy,
-      recipientsCount: alert._count.recipients,
-      readCount: readByAlert.get(alert.id) ?? 0,
-      recipientsPreview: alert.recipients.map((r) => ({ ...r.user, readAt: r.readAt })),
-    }));
+    const items = await Promise.all(
+      alerts.map(async (alert) => {
+        let recipientsCount = alert._count.recipients;
+        let recipientsPreview = alert.recipients.map((r) => ({ ...r.user, readAt: r.readAt }));
+
+        if (alert.audience !== 'USERS') {
+          const role = AUDIENCE_TO_ROLE[alert.audience];
+          recipientsCount = await this.prisma.user.count({ where: role ? { role } : {} });
+
+          if (recipientsPreview.length === 0) {
+            const sampleUsers = await this.prisma.user.findMany({
+              where: role ? { role } : {},
+              take: RECIPIENTS_PREVIEW_SIZE,
+              select: USER_SUMMARY,
+              orderBy: { name: 'asc' },
+            });
+            recipientsPreview = sampleUsers.map((u) => ({ ...u, readAt: null }));
+          }
+        }
+
+        return {
+          id: alert.id,
+          subject: alert.subject,
+          message: alert.message,
+          severity: alert.severity,
+          audience: alert.audience,
+          createdAt: alert.createdAt,
+          createdBy: alert.createdBy,
+          recipientsCount,
+          readCount: readByAlert.get(alert.id) ?? 0,
+          recipientsPreview,
+        };
+      })
+    );
 
     return PaginatedResponseDto.of(items, total, query);
   }
@@ -120,6 +154,20 @@ export class AlertsService {
       throw new ResourceNotFoundException('Alerta', id);
     }
 
+    let recipientsList = alert.recipients.map((r) => ({ ...r.user, readAt: r.readAt }));
+    let recipientsCount = recipientsList.length;
+
+    if (alert.audience !== 'USERS') {
+      const role = AUDIENCE_TO_ROLE[alert.audience];
+      const allAudienceUsers = await this.prisma.user.findMany({
+        where: role ? { role } : {},
+        select: USER_SUMMARY,
+        orderBy: { name: 'asc' },
+      });
+      recipientsCount = allAudienceUsers.length;
+      recipientsList = allAudienceUsers.map((u) => ({ ...u, readAt: null }));
+    }
+
     return {
       id: alert.id,
       subject: alert.subject,
@@ -128,13 +176,13 @@ export class AlertsService {
       audience: alert.audience,
       createdAt: alert.createdAt,
       createdBy: alert.createdBy,
-      recipientsCount: alert.recipients.length,
+      recipientsCount,
       readCount: alert.recipients.filter((r) => r.readAt !== null).length,
-      recipients: alert.recipients.map((r) => ({ ...r.user, readAt: r.readAt })),
+      recipients: recipientsList,
     };
   }
 
-  /** Autocomplete de destinatários: por nome, e-mail, placa ou modelo do veículo. */
+  /** Autocomplete de destinatarios: nome, e-mail, placa ou modelo do veículo. */
   async searchRecipients(q: string) {
     const term = q.trim();
     const plate = term.toUpperCase().replace('-', '');
@@ -142,20 +190,27 @@ export class AlertsService {
     return this.prisma.user.findMany({
       where: term
         ? {
-            OR: [
-              { name: { contains: term, mode: 'insensitive' } },
-              { email: { contains: term, mode: 'insensitive' } },
-              { vehicles: { some: { plate: { contains: plate } } } },
-              { vehicles: { some: { model: { contains: term, mode: 'insensitive' } } } },
-            ],
-          }
+          OR: [
+            { name: { contains: term, mode: 'insensitive' } },
+            { email: { contains: term, mode: 'insensitive' } },
+            { vehicles: { some: { plate: { contains: plate } } } },
+            { vehicles: { some: { model: { contains: term, mode: 'insensitive' } } } },
+          ],
+        }
         : {},
       orderBy: { name: 'asc' },
       take: RECIPIENT_SEARCH_LIMIT,
       select: {
         ...USER_SUMMARY,
         role: true,
-        vehicles: { select: { plate: true, model: true, color: true } },
+        photoUrl: true,
+        vehicles: {
+          select: {
+            plate: true,
+            model: true,
+            color: true,
+          },
+        },
       },
     });
   }
@@ -187,4 +242,24 @@ export class AlertsService {
     }
     return users.map((u) => u.id);
   }
+
+  /* Remoção de alerta */
+  async remove(id: string) {
+    const alert = await this.prisma.alert.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!alert) {
+      throw new ResourceNotFoundException('Alerta', id);
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.alertRecipient.deleteMany({ where: { alertId: id } }),
+      this.prisma.alert.delete({ where: { id } }),
+    ]);
+
+    return { id, deleted: true };
+  }
+
 }

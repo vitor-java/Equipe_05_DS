@@ -79,7 +79,7 @@
       "emailVerified": true,
       "firstName": "Admin",
       "lastName": "Test",
-      "email": "admin@dev.local",
+      "email": "f",
       "credentials": [
         {
           "type": "password",

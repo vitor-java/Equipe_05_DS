@@ -42,7 +42,9 @@
     "zod": "^4.5.4"
   },
   "overrides": {
-    "brace-expansion": "^2.0.2"
+    "brace-expansion": "^2.0.2",
+    "react": "$react",
+    "react-dom": "$react-dom"
   },
   "devDependencies": {
     "@cincoders/release-tooling": "^1.0.0",

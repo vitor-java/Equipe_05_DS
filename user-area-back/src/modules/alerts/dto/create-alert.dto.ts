@@ -18,18 +18,18 @@ export const CreateAlertSchema = z
     recipientIds: z
       .array(z.string().uuid())
       .max(MAX_ALERT_RECIPIENTS)
-      .optional()
+      .default([])
       .describe('Os IDs dos usuários (obrigatório quando audience = USERS)'),
 
     severity: z.enum(ALERT_SEVERITIES).default('INFO'),
     subject: z.string().trim().min(1).max(MAX_SUBJECT_LENGTH),
     message: z.string().trim().min(1).max(MAX_MESSAGE_LENGTH),
   })
+  .superRefine((data, ctx) => {
+    const recipients = Array.isArray(data.recipientIds) ? data.recipientIds : [];
+    const hasRecipients = recipients.length > 0;
 
-  .superRefine((value, ctx) => {
-    const hasRecipients = (value.recipientIds?.length ?? 0) > 0;
-
-    if (value.audience === 'USERS' && !hasRecipients) {
+    if (data.audience === 'USERS' && !hasRecipients) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['recipientIds'],
@@ -37,7 +37,7 @@ export const CreateAlertSchema = z
       });
     }
 
-    if (value.audience !== 'USERS' && hasRecipients) {
+    if (data.audience !== 'USERS' && hasRecipients) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['recipientIds'],
@@ -46,4 +46,4 @@ export const CreateAlertSchema = z
     }
   });
 
-export class CreateAlertDto extends createZodDto(CreateAlertSchema) {}
+export class CreateAlertDto extends createZodDto(CreateAlertSchema) { }

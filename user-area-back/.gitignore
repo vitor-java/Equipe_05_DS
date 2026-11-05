@@ -7,3 +7,5 @@ coverage
 tsconfig.tsbuildinfo
 tsconfig.build.tsbuildinfo
 .codegraph
+node_modules/
+**/node_modules/

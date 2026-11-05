@@ -3,7 +3,8 @@ import { ADMIN_ONLY_LINKS, ALL_ROLES, Links, Roles, WRITE_ROLES } from './enums'
 
 describe('Roles (nomes no realm do Keycloak)', () => {
   it('mantém o prefixo sys_ e os nomes exatos', () => {
-    expect(Roles.USERS).toBe('sys_user-area-users');
+    expect(Roles.STUDENT).toBe('sys_user-area-student');
+    expect(Roles.STAFF).toBe('sys_user-area-staff');
     expect(Roles.ADMIN).toBe('sys_user-area-admin');
   });
 
@@ -16,12 +17,11 @@ describe('Roles (nomes no realm do Keycloak)', () => {
 
 describe('grupos de roles', () => {
   it('ALL_ROLES aceita qualquer role do sistema, ADMIN incluso', () => {
-    expect(ALL_ROLES).toEqual([Roles.USERS, Roles.ADMIN]);
+    expect(ALL_ROLES).toEqual([Roles.STUDENT, Roles.STAFF, Roles.ADMIN]);
   });
 
   it('WRITE_ROLES não é satisfeito só por pertencimento', () => {
     expect(WRITE_ROLES).toEqual([Roles.ADMIN]);
-    expect(WRITE_ROLES).not.toContain(Roles.USERS);
   });
 });
 

@@ -71,7 +71,7 @@ describe('<RouteMap>', () => {
       isLoading: false,
       activeNavigator: undefined,
       user: {
-        access_token: fakeToken(['sys_user-area-users']),
+        access_token: fakeToken(['sys_user-area-students']),
         profile: {
           email: 'user@cin.ufpe.br',
           given_name: 'Test User',

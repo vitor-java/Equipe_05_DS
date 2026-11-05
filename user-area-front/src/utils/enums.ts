@@ -2,6 +2,8 @@ export enum Links {
   ACCOUNT_MANAGEMENT = 'https://account.cin.ufpe.br',
   INTRANET_HOME = 'https://intranet.cin.ufpe.br/',
   HOME = '/',
+  PROFILE = '/profile',
+  ADMIN = '/admin',
   FORBIDDEN = '/forbidden',
   TODOS = '/todos',
   TEAM = '/team',

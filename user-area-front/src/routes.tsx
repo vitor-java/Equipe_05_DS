@@ -7,15 +7,15 @@ import ForbiddenPageCin from './components/ForbiddenPageCin';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ErrorScreen, httpErrors } from '@cincoders/cinnamon';
 import { ALL_ROLES, Links, Roles } from './utils/enums';
-import TodosPage from './pages/todos';
-import TeamPage from './pages/team';
+import { ProfilePage } from './pages/Profile';
+import { AdminDashboard } from './pages/AdminDashboard';
 import LoginPage from './pages/login';
+import { MainLayout } from './layouts/MainLayout';
 
 /**
  * Error boundary de nível de rota: um erro de renderização numa página mostra a
  * tela de erro padrão só naquela área, e `resetKey={pathname}` faz o boundary
- * se recuperar sozinho ao navegar para outra rota — sem isso a aplicação ficaria
- * presa na tela de erro. Envolve o `<Outlet />` das rotas protegidas.
+ * se recuperar sozinho ao navegar para outra rota.
  */
 function RouteErrorBoundary() {
   const { pathname } = useLocation();
@@ -25,6 +25,7 @@ function RouteErrorBoundary() {
     </ErrorBoundary>
   );
 }
+
 
 function RouteMap() {
   const auth = useAuth();
@@ -46,12 +47,6 @@ function RouteMap() {
   }, [auth]);
 
   useEffect(() => {
-    if (auth.isAuthenticated && auth.user) {
-      setAuthToken(auth.user.access_token);
-    } else {
-      setAuthToken(null);
-    }
-
     const refreshFn = async () => {
       try {
         console.log('Token expirado, tentando refresh silencioso...');
@@ -67,7 +62,6 @@ function RouteMap() {
     };
 
     setRefreshTokenFn(refreshFn);
-
     return () => {
       setRefreshTokenFn(null);
     };
@@ -87,10 +81,6 @@ function RouteMap() {
     auth.events.addSilentRenewError(handleExpired);
     auth.events.addUserSignedOut(handleExpired);
 
-    // Acionado pelo fetchApi quando uma chamada ao backend segue negada mesmo
-    // após tentar renovar o token — a sessão morreu, então deslogamos. Limpar
-    // o estado do auth basta: RouteMap re-renderiza e a rota / já cai para a
-    // tela de login por não haver mais usuário autenticado.
     setLogoutFn(() => {
       void handleExpired();
     });
@@ -103,15 +93,22 @@ function RouteMap() {
     };
   }, [auth]);
 
+  // Identifica o papel do utilizador logado para refletir na Navbar (ex: mostrar botão admin se for ADMIN)
+  const userRole = 
+    auth.user?.profile?.role === 'ADMIN' || 
+    (auth.user?.profile?.roles as string[])?.includes('ADMIN') 
+      ? 'ADMIN' 
+      : 'ALUNO';
+
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
-        {/* Rota raiz /: se autenticado vai para /todos, caso contrário exibe tela de login */}
+        {/* Rota raiz /: se autenticado vai para /profile, caso contrário exibe tela de login */}
         <Route
           path={Links.HOME}
           element={
             auth.isAuthenticated ? (
-              <Navigate to={Links.TODOS} replace />
+              <Navigate to="/profile" replace />
             ) : (
               <LoginPage auth={auth} />
             )
@@ -121,22 +118,42 @@ function RouteMap() {
         {/* Acesso negado: destino do redirect do RequireAuth (cinnamon). */}
         <Route path={Links.FORBIDDEN} element={<ForbiddenPageCin auth={auth} />} />
 
-        {/* Rotas protegidas abertas a qualquer usuário do sistema. O
-            RouteErrorBoundary isola falhas de renderização por página. */}
+        {/* Rotas protegidas gerais (Perfil Institucional) abertas a qualquer usuário */}
         <Route element={<PageCin auth={auth} permittedRoles={ALL_ROLES} />}>
           <Route element={<RouteErrorBoundary />}>
-            <Route path={Links.TODOS} element={<TodosPage />} />
+            <Route 
+              path="/profile" 
+              element={
+                <MainLayout>
+                  <ProfilePage />
+                </MainLayout>
+              } 
+            />
+            <Route
+              path="/profile/:email"
+              element={
+                <MainLayout>
+                  <ProfilePage />
+                </MainLayout>
+              }
+            />
+
             {/* Rota desconhecida: componente de erro pronto da cinnamon (404). */}
             <Route path="*" element={<ErrorScreen errorType={httpErrors.NOTFOUND_404} />} />
           </Route>
         </Route>
 
-        {/* Rotas de gerenciamento — só ADMIN. Mesma tela do CIn, mas com
-            `permittedRoles={[Roles.ADMIN]}`: quem não é ADMIN é redirecionado
-            para /forbidden pelo RequireAuth do cinnamon. */}
+        {/* Rotas de gerenciamento — restritas apenas a ADMIN */}
         <Route element={<PageCin auth={auth} permittedRoles={[Roles.ADMIN]} />}>
           <Route element={<RouteErrorBoundary />}>
-            <Route path={Links.TEAM} element={<TeamPage />} />
+            <Route 
+              path="/admin" 
+              element={
+                <MainLayout>
+                  <AdminDashboard />
+                </MainLayout>
+              } 
+            />
           </Route>
         </Route>
       </Routes>

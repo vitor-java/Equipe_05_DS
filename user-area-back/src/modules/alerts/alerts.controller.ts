@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AccessRole } from '@/common/auth/access-role.enum';
 import type { CurrentUser } from '@/common/auth/current-user.interface';
@@ -54,5 +54,13 @@ export class AlertsController {
   @ApiResponse({ status: 404, description: 'Alerta não encontrado' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.alertsService.findOne(id);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Apagar um alerta e as notificações associadas' })
+  @ApiResponse({ status: 200, description: 'Alerta apagado' })
+  @ApiResponse({ status: 404, description: 'Alerta não encontrado' })
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.alertsService.remove(id);
   }
 }
