@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model TaskStatus {
+  id    Int    @id @default(autoincrement())
+  code  String @unique
+  label String
+  tasks Task[]
+
+  @@map("task_statuses")
+}
+
+model TaskPriority {
+  id    Int    @id @default(autoincrement())
+  code  String @unique
+  label String
+  tasks Task[]
+
+  @@map("task_priorities")
+}
+
+model Task {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String
+  description String?
+  statusId    Int
+  status      TaskStatus   @relation(fields: [statusId], references: [id])
+  priorityId  Int
+  priority    TaskPriority @relation(fields: [priorityId], references: [id])
+  dueDate     DateTime?
+  ownerId     String?      @db.Uuid
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([ownerId])
+  @@index([statusId])
+  @@index([priorityId])
+  @@map("tasks")
+}
+
+enum UserRole {
+  STUDENT
+  STAFF
+  ADMIN
+}
+
+model User {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  keycloakId  String       @unique
+  name        String
+  email       String
+  birthDate   DateTime?    @db.Date
+  role        UserRole     @default(STUDENT)
+  photoUrl    String?
+  links       ProfileLink[]
+  experiences Experience[]
+  projects    Project[]
+  vehicles    Vehicle[]
+  alertsCreated  Alert[]          @relation("AlertsCreated")
+  alertsReceived AlertRecipient[] @relation("AlertsReceived")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("users")
+}
+
+model ProfileLink {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  label  String
+  url    String
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("profile_links")
+}
+
+model Experience {
+  id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  description String
+  position    Int    @default(0)
+  userId      String @db.Uuid
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("experiences")
+}
+
+model Project {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  description String?
+  url         String?
+  userId      String  @db.Uuid
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("projects")
+}
+
+model Vehicle {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  plate  String @unique
+  model  String
+  color  String
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("vehicles")
+}
+
+enum AlertSeverity {
+  INFO
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum AlertAudience {
+  USERS
+  ALL
+  STUDENTS
+  STAFF
+}
+
+model Alert {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  subject     String
+  message     String
+  severity    AlertSeverity    @default(INFO)
+  audience    AlertAudience    @default(USERS)
+  createdById String           @db.Uuid
+  createdBy   User             @relation("AlertsCreated", fields: [createdById], references: [id])
+  recipients  AlertRecipient[]
+  createdAt   DateTime         @default(now())
+
+  @@index([createdAt])
+  @@index([createdById])
+  @@map("alerts")
+}
+
+model AlertRecipient {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  alertId   String    @db.Uuid
+  alert     Alert     @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  userId    String    @db.Uuid
+  user      User      @relation("AlertsReceived", fields: [userId], references: [id], onDelete: Cascade)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([alertId, userId])
+  @@index([userId, readAt])
+  @@map("alert_recipients")
+}
