@@ -1,12 +1,10 @@
+import { describe, it, expect, beforeEach, afterEach,vi } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { AccessRole } from '@/common/auth/access-role.enum';
 import type { CurrentUser } from '@/common/auth/current-user.interface';
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
-import {
-  PaginationQueryDto,
-  PaginationQuerySchema,
-} from '@/common/pagination/pagination-query.dto';
+import {PaginationQueryDto,PaginationQuerySchema} from '@/common/pagination/pagination-query.dto';
 import { PrismaService } from '@/database/prisma.service';
 import { UsersService } from '../users/users.service';
 import { AlertsService } from './alerts.service';

@@ -1,4 +1,3 @@
-
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { API_URL, fetchApi, getApiErrorMessage } from './api';
 import { notificationService } from './notificationService';

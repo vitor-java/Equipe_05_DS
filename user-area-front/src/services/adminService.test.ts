@@ -1,4 +1,3 @@
-
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fetchApi, getApiErrorMessage } from './api';
 import { adminService, CATEGORY_OPTIONS } from './adminService';

@@ -1,10 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import {
-  fetchApi,
-  getApiErrorMessage,
-  setAuthToken,
-  setRefreshTokenFn,
-} from './api'
+import {fetchApi,getApiErrorMessage,setAuthToken,setRefreshTokenFn,} from './api'
 
 describe('getApiErrorMessage', () => {
   it('extrai message string do corpo JSON (formato NestJS)', async () => {

@@ -1,3 +1,4 @@
+import { describe, it, expect} from 'vitest';
 import { HttpStatus } from '@nestjs/common';
 import { AccessDeniedException } from './access-denied.exception';
 import { ErrorCode } from './error-code.enum';

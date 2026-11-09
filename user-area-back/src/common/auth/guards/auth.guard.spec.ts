@@ -1,3 +1,4 @@
+import { describe, it, expect,vi } from 'vitest';
 import { UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from './auth.guard';
 import { AccessRole } from '../access-role.enum';

@@ -1,3 +1,4 @@
+import { describe, it, expect} from 'vitest';
 import { HttpStatus } from '@nestjs/common';
 import { ResourceNotFoundException } from './resource-not-found.exception';
 describe('ResourceNotFoundException', () => {
