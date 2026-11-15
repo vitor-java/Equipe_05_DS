@@ -1,0 +1,10 @@
+# Relatório de Dívida Técnica
+
+Levantamento dos principais problemas de projeto, violações de SOLID e *code smells* identificados nos módulos do backend (NestJS) e frontend (React) durante a análise da Sprint 3.
+
+| ID | Local (Módulo / Arquivo) | Problema | Categoria | Por que isso atrapalha | Como foi encontrado | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **DT-01** | `user-area-back/src/modules/` (Serviço de domínio), método de processamento principal | Serviço acumulando validações de payload Zod, regras de negócio complexas e chamadas diretas ao Prisma Client em um único método extenso. | SRP, Long Method, Baixa Coesão | Qualquer mudança na estrutura de dados do banco obriga a mexer direto na regra de negócio, dificultando testes unitários isolados com o Vitest. | Leitura manual guiada + auxílio da LLM | Refatorado |
+| **DT-02** | `user-area-back/src/modules/` (Módulo de Integração), injeção de dependência | Instanciação direta de dependências externas de serviço dentro do construtor sem usar o container de IoC do NestJS. | DIP, Alto Acoplamento | Dificulta a criação de mocks limpos para a suíte de testes unitários do Vitest. | Análise estática com Biome e inspeção de código | Refatorado |
+| **DT-03** | `user-area-front/src/modules/` (Componente de formulário com Zod), tratamento de status | Uso de strings mágicas e números literais espalhados pelas verificações de permissões e exibição condicional de componentes `<Can>`. | Magic Numbers / Magic Strings | Torna a manutenção frágil caso os papéis (*roles*) ou status do sistema mudem no Keycloak ou no banco. | Biome (regras de análise estática) | Refatorado |
+| **DT-04** | `user-area-front/src/hooks/` ou helpers compartilhados de requisição | Função de suporte a requisições recebendo muitos parâmetros posicionais individuais em vez de um objeto de configuração unificado. | Long Parameter List | Aumenta a chance de inversão de argumentos na chamada e engessa futuras expansões da API. | Biome (complexidade e parâmetros) | Aberto |
