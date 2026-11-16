@@ -5,7 +5,10 @@ import type { CurrentUser } from '@/common/auth/current-user.interface';
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
 import { PrismaService } from '@/database/prisma.service';
 import { UsersService } from '../users/users.service';
-import {ListNotificationsQueryDto,ListNotificationsQuerySchema,} from './dto/list-notifications.dto';
+import {
+  ListNotificationsQueryDto,
+  ListNotificationsQuerySchema,
+} from './dto/list-notifications.dto';
 import { NotificationsService } from './notifications.service';
 
 describe('NotificationsService', () => {

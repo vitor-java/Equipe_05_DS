@@ -1,22 +1,13 @@
 import databaseConfig from './database.config';
-import {describe,it,expect,beforeEach,afterEach,} from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 describe('database config', () => {
-  const keys = [
-    'DATABASE_URL',
-    'DB_HOST',
-    'DB_PORT',
-    'DB_USERNAME',
-    'DB_PASSWORD',
-    'DB_DATABASE',
-  ];
+  const keys = ['DATABASE_URL', 'DB_HOST', 'DB_PORT', 'DB_USERNAME', 'DB_PASSWORD', 'DB_DATABASE'];
 
   let previous: Record<string, string | undefined>;
 
   beforeEach(() => {
-    previous = Object.fromEntries(
-      keys.map((key) => [key, process.env[key]]),
-    );
+    previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
 
     keys.forEach((key) => {
       delete process.env[key];
@@ -42,9 +33,7 @@ describe('database config', () => {
   });
 
   it('monta URL com valores padrão', () => {
-    expect(databaseConfig().url).toBe(
-      'postgresql://postgres:postgres@localhost:5432/database',
-    );
+    expect(databaseConfig().url).toBe('postgresql://postgres:postgres@localhost:5432/database');
   });
 
   it('monta URL com variáveis DB_*', () => {
@@ -54,9 +43,7 @@ describe('database config', () => {
     process.env.DB_PASSWORD = 'p';
     process.env.DB_DATABASE = 'd';
 
-    expect(databaseConfig().url).toBe(
-      'postgresql://u:p@db:5555/d',
-    );
+    expect(databaseConfig().url).toBe('postgresql://u:p@db:5555/d');
   });
 
   it('propaga URL montada para DATABASE_URL', () => {

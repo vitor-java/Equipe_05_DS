@@ -21,9 +21,7 @@ describe('TaskController', () => {
 
     const dto: any = { title: 'x' };
 
-    await expect(
-      controller.create(dto, { userId: 'u' } as any),
-    ).resolves.toEqual({ id: '1' });
+    await expect(controller.create(dto, { userId: 'u' } as any)).resolves.toEqual({ id: '1' });
 
     expect(service.create).toHaveBeenCalledWith(dto, 'u');
   });

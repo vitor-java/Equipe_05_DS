@@ -88,19 +88,23 @@ describe('UsersService', () => {
     it('cria ou atualiza o usuário com os dados do Keycloak', async () => {
       prisma.user.upsert.mockResolvedValue(me);
       await expect(service.getOrCreateMe(user)).resolves.toEqual(me);
-      expect(prisma.user.upsert).toHaveBeenCalledWith(expect.objectContaining({
-        where: { keycloakId: user.userId },
-        create: { keycloakId: user.userId, name: user.name, email: user.email, role: user.role },
-        update: { name: user.name, email: user.email, role: user.role },
-      }));
+      expect(prisma.user.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { keycloakId: user.userId },
+          create: { keycloakId: user.userId, name: user.name, email: user.email, role: user.role },
+          update: { name: user.name, email: user.email, role: user.role },
+        }),
+      );
     });
 
     it('usa valores padrão quando nome e email não existem', async () => {
       prisma.user.upsert.mockResolvedValue(me);
       await service.getOrCreateMe({ ...user, name: undefined, email: undefined });
-      expect(prisma.user.upsert).toHaveBeenCalledWith(expect.objectContaining({
-        create: expect.objectContaining({ name: 'Sem nome', email: '' }),
-      }));
+      expect(prisma.user.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({ name: 'Sem nome', email: '' }),
+        }),
+      );
     });
   });
 
@@ -125,14 +129,16 @@ describe('UsersService', () => {
     it('atualiza a data de nascimento', async () => {
       await service.updateMe(user, { birthDate: '2000-01-01' } as any);
       expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id: me.id }, data: { birthDate: new Date('2000-01-01') },
+        where: { id: me.id },
+        data: { birthDate: new Date('2000-01-01') },
       });
     });
 
     it('permite remover a data de nascimento', async () => {
       await service.updateMe(user, { birthDate: null } as any);
       expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id: me.id }, data: { birthDate: null },
+        where: { id: me.id },
+        data: { birthDate: null },
       });
     });
 
@@ -148,10 +154,12 @@ describe('UsersService', () => {
     it('substitui experiências e atribui posições', async () => {
       const experiences = [{ description: 'Experiência 1' }, { description: 'Experiência 2' }];
       await service.updateMe(user, { experiences } as any);
-      expect(prisma.experience.createMany).toHaveBeenCalledWith({ data: [
-        { description: 'Experiência 1', position: 0, userId: me.id },
-        { description: 'Experiência 2', position: 1, userId: me.id },
-      ] });
+      expect(prisma.experience.createMany).toHaveBeenCalledWith({
+        data: [
+          { description: 'Experiência 1', position: 0, userId: me.id },
+          { description: 'Experiência 2', position: 1, userId: me.id },
+        ],
+      });
     });
 
     it('substitui os projetos existentes', async () => {
@@ -164,7 +172,9 @@ describe('UsersService', () => {
     });
 
     it('normaliza placas dos veículos', async () => {
-      await service.updateMe(user, { vehicles: [{ plate: 'abc-1234', model: 'Carro', color: 'Azul' }] } as any);
+      await service.updateMe(user, {
+        vehicles: [{ plate: 'abc-1234', model: 'Carro', color: 'Azul' }],
+      } as any);
       expect(prisma.vehicle.upsert).toHaveBeenCalledWith({
         where: { plate: 'ABC1234' },
         create: { plate: 'ABC1234', model: 'Carro', color: 'Azul', userId: me.id },
@@ -173,17 +183,23 @@ describe('UsersService', () => {
     });
 
     it('remove veículos que não estão mais na lista', async () => {
-      await service.updateMe(user, { vehicles: [{ plate: 'ABC1234', model: 'Carro', color: 'Azul' }] } as any);
+      await service.updateMe(user, {
+        vehicles: [{ plate: 'ABC1234', model: 'Carro', color: 'Azul' }],
+      } as any);
       expect(prisma.vehicle.deleteMany).toHaveBeenCalledWith({
         where: { userId: me.id, plate: { notIn: ['ABC1234'] } },
       });
     });
 
     it('lança ConflictException quando existem placas repetidas', async () => {
-      await expect(service.updateMe(user, { vehicles: [
-        { plate: 'ABC-1234', model: 'Carro 1', color: 'Azul' },
-        { plate: 'ABC1234', model: 'Carro 2', color: 'Vermelho' },
-      ] } as any)).rejects.toThrow(ConflictException);
+      await expect(
+        service.updateMe(user, {
+          vehicles: [
+            { plate: 'ABC-1234', model: 'Carro 1', color: 'Azul' },
+            { plate: 'ABC1234', model: 'Carro 2', color: 'Vermelho' },
+          ],
+        } as any),
+      ).rejects.toThrow(ConflictException);
     });
 
     it('executa as alterações dentro de uma transação', async () => {
@@ -201,24 +217,32 @@ describe('UsersService', () => {
     it('busca usuários pelo nome ou email', async () => {
       prisma.user.findMany.mockResolvedValue([me]);
       await expect(service.search('Ana')).resolves.toEqual([me]);
-      expect(prisma.user.findMany).toHaveBeenCalledWith(expect.objectContaining({
-        where: { OR: [
-          { name: { contains: 'Ana', mode: 'insensitive' } },
-          { email: { contains: 'Ana', mode: 'insensitive' } },
-        ] },
-        take: 10,
-      }));
+      expect(prisma.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            OR: [
+              { name: { contains: 'Ana', mode: 'insensitive' } },
+              { email: { contains: 'Ana', mode: 'insensitive' } },
+            ],
+          },
+          take: 10,
+        }),
+      );
     });
 
     it('limita o termo de pesquisa a 60 caracteres', async () => {
       prisma.user.findMany.mockResolvedValue([]);
       await service.search('a'.repeat(100));
-      expect(prisma.user.findMany).toHaveBeenCalledWith(expect.objectContaining({
-        where: { OR: [
-          { name: { contains: 'a'.repeat(60), mode: 'insensitive' } },
-          { email: { contains: 'a'.repeat(60), mode: 'insensitive' } },
-        ] },
-      }));
+      expect(prisma.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            OR: [
+              { name: { contains: 'a'.repeat(60), mode: 'insensitive' } },
+              { email: { contains: 'a'.repeat(60), mode: 'insensitive' } },
+            ],
+          },
+        }),
+      );
     });
   });
 
@@ -226,14 +250,18 @@ describe('UsersService', () => {
     it('retorna o perfil público encontrado', async () => {
       prisma.user.findFirst.mockResolvedValue(me);
       await expect(service.findPublicProfile('ana@test.com')).resolves.toEqual(me);
-      expect(prisma.user.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-        where: { email: { equals: 'ana@test.com', mode: 'insensitive' } },
-      }));
+      expect(prisma.user.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { email: { equals: 'ana@test.com', mode: 'insensitive' } },
+        }),
+      );
     });
 
     it('lança ResourceNotFoundException quando o usuário não existe', async () => {
       prisma.user.findFirst.mockResolvedValue(null);
-      await expect(service.findPublicProfile('inexistente@test.com')).rejects.toThrow(ResourceNotFoundException);
+      await expect(service.findPublicProfile('inexistente@test.com')).rejects.toThrow(
+        ResourceNotFoundException,
+      );
     });
   });
 
@@ -295,7 +323,10 @@ describe('UsersService', () => {
     it('utiliza jpg quando o mimetype não é reconhecido', async () => {
       const unknownFile = { ...file, mimetype: 'application/octet-stream' };
       await service.updateAvatar(user, unknownFile);
-      expect(renameSync).toHaveBeenCalledWith(unknownFile.path, join('/tmp/avatars', 'user-123.jpg'));
+      expect(renameSync).toHaveBeenCalledWith(
+        unknownFile.path,
+        join('/tmp/avatars', 'user-123.jpg'),
+      );
     });
   });
 });

@@ -1,10 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach,vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { AccessRole } from '@/common/auth/access-role.enum';
 import type { CurrentUser } from '@/common/auth/current-user.interface';
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
-import {PaginationQueryDto,PaginationQuerySchema} from '@/common/pagination/pagination-query.dto';
+import {
+  PaginationQueryDto,
+  PaginationQuerySchema,
+} from '@/common/pagination/pagination-query.dto';
 import { PrismaService } from '@/database/prisma.service';
 import { UsersService } from '../users/users.service';
 import { AlertsService } from './alerts.service';
@@ -138,9 +141,9 @@ describe('AlertsService', () => {
     it('lança BadRequestException e não cria nada quando algum destinatário não existe', async () => {
       prisma.user.findMany.mockResolvedValue([{ id: 'u1' }]); // u2 não foi encontrado
 
-      await expect(
-        service.create(ADMIN, makeDto({ recipientIds: ['u1', 'u2'] })),
-      ).rejects.toThrow('Destinatários não encontrados: u2.');
+      await expect(service.create(ADMIN, makeDto({ recipientIds: ['u1', 'u2'] }))).rejects.toThrow(
+        'Destinatários não encontrados: u2.',
+      );
       expect(prisma.alert.create).not.toHaveBeenCalled();
     });
 
@@ -148,10 +151,7 @@ describe('AlertsService', () => {
       prisma.user.findMany.mockResolvedValue([]);
       prisma.alert.create.mockResolvedValue(makeAlert());
 
-      const result = await service.create(
-        ADMIN,
-        makeDto({ recipientIds: undefined }),
-      );
+      const result = await service.create(ADMIN, makeDto({ recipientIds: undefined }));
 
       const data = prisma.alert.create.mock.calls[0][0].data;
       expect(data).not.toHaveProperty('recipients');
@@ -284,9 +284,7 @@ describe('AlertsService', () => {
       const result = await service.findAll(makeQuery());
 
       expect(prisma.user.count).toHaveBeenCalledWith({ where: {} });
-      expect(prisma.user.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: {} }),
-      );
+      expect(prisma.user.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: {} }));
       expect(result.items[0].recipientsCount).toBe(100);
       expect(result.items[0].recipientsPreview).toEqual([]);
     });
@@ -377,9 +375,7 @@ describe('AlertsService', () => {
 
       const result = await service.findOne('alert-1');
 
-      expect(prisma.user.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: {} }),
-      );
+      expect(prisma.user.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: {} }));
       expect(result.recipientsCount).toBe(0);
       expect(result.recipients).toEqual([]);
     });
@@ -468,9 +464,9 @@ describe('AlertsService', () => {
     it('lança BadRequestException quando não há usuários na audiência', async () => {
       prisma.user.findMany.mockResolvedValue([]);
 
-      await expect(
-        service['resolveRecipientIds'](makeDto({ audience: 'STAFF' })),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service['resolveRecipientIds'](makeDto({ audience: 'STAFF' }))).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });
