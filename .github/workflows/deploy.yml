@@ -20,4 +20,4 @@ jobs:
       - name: Deploy
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "bash /root/deploy-user-area.sh"
+            "bash /home/ubuntu/deploy-user-area.sh"
