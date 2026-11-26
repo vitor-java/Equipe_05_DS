@@ -32,17 +32,7 @@ export class AlertsService {
   /** Emite um alerta: cria o alerta e uma notificação pendente para cada destinatário. */
   async create(admin: CurrentUser, dto: CreateAlertDto) {
     const createdById = await this.usersService.resolveUserId(admin);
-
-    let recipientIds: string[] = [];
-    if (dto.audience === 'USERS') {
-      recipientIds = await this.resolveRecipientIds(dto);
-    } else {
-      const role = AUDIENCE_TO_ROLE[dto.audience];
-      const count = await this.prisma.user.count({ where: role ? { role } : {} });
-      if (count === 0) {
-        throw new BadRequestException('Nenhum usuário encontrado para a audiência selecionada.');
-      }
-    }
+    const recipientIds = await this.resolveRecipientIds(dto);
 
     const alert = await this.prisma.alert.create({
       data: {
@@ -51,9 +41,7 @@ export class AlertsService {
         severity: dto.severity,
         audience: dto.audience,
         createdById,
-        ...(dto.audience === 'USERS' && recipientIds.length > 0
-          ? { recipients: { createMany: { data: recipientIds.map((userId) => ({ userId })) } } }
-          : {}),
+        recipients: { createMany: { data: recipientIds.map((userId) => ({ userId })) } },
       },
       include: { _count: { select: { recipients: true } } },
     });
@@ -65,7 +53,7 @@ export class AlertsService {
       severity: alert.severity,
       audience: alert.audience,
       createdAt: alert.createdAt,
-      recipientsCount: dto.audience === 'USERS' ? alert._count.recipients : 'Massa / Global',
+      recipientsCount: alert._count.recipients,
     };
   }
 
