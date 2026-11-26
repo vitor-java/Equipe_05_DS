@@ -22,5 +22,9 @@ export default defineConfig(({ mode }) => {
       },
       dedupe: ['react', 'react-dom'],
     },
+    preview: {
+      host: true,
+      allowedHosts: true,
+    },
   }
 })
