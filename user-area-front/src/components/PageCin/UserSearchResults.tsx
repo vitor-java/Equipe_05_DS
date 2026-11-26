@@ -1,3 +1,4 @@
+import { getAvatarUrl } from '../UserAvatar';
 import type { UserProfile } from '../../services/userService';
 
 interface UserSearchResultsProps {
@@ -29,7 +30,7 @@ export function UserSearchResults({ open, loading, results, onSelect }: UserSear
                         className="flex w-full cursor-pointer items-center gap-2.5 border-b border-gray-100 bg-white px-3.5 py-2.5 text-left last:border-b-0 hover:bg-gray-50"
                     >
                         {user.photoUrl ? (
-                            <img src={user.photoUrl} alt="" className="h-[30px] w-[30px] shrink-0 rounded-full object-cover" />
+                            <img src={getAvatarUrl(user.photoUrl)} alt="" className="h-[30px] w-[30px] shrink-0 rounded-full object-cover" />
                         ) : (
                             <span className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full bg-[#db1e2f] text-[13px] font-semibold text-white">
                                 {user.name.charAt(0).toUpperCase()}
