@@ -153,7 +153,7 @@ export class UsersService {
           { email: { contains: term, mode: 'insensitive' } },
         ],
       },
-      select: { id: true, name: true, email: true, role: true },
+      select: { id: true, name: true, email: true, role: true, photoUrl: true },
       orderBy: { name: 'asc' },
       take: 10,
     });
@@ -167,6 +167,7 @@ export class UsersService {
         name: true,
         email: true,
         role: true,
+        photoUrl: true,
         links: { select: { id: true, label: true, url: true } },
         experiences: { select: { id: true, description: true, position: true }, orderBy: { position: 'asc' } },
         projects: { select: { id: true, name: true, description: true, url: true } },
