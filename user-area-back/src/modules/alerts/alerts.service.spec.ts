@@ -34,7 +34,7 @@ describe('AlertsService', () => {
   const ADMIN: CurrentUser = { userId: 'keycloak-admin', role: AccessRole.ADMIN };
   const ADMIN_ID = 'admin-uuid';
 
-  // Monta o corpo de um pedido de criação de alerta. Cada teste muda só o que importa.
+  // Monta o corpo de um pedido de criação de alerta. Cada teste só vai mudar o que importa de vdd.
   function makeDto(overrides: Record<string, unknown> = {}): CreateAlertDto {
     return {
       audience: 'USERS',
@@ -62,7 +62,7 @@ describe('AlertsService', () => {
     };
   }
 
-  // Passa pelo schema para calcular skip e take de verdade (como na API real).
+  // passa pelo schema para calcular skip e take de verdade
   function makeQuery() {
     return Object.assign(
       new PaginationQueryDto(),
@@ -153,41 +153,61 @@ describe('AlertsService', () => {
 
       const result = await service.create(ADMIN, makeDto({ recipientIds: undefined }));
 
+      expect(prisma.user.findMany).toHaveBeenCalledWith({
+        where: { id: { in: [] } },
+        select: { id: true },
+      });
       const data = prisma.alert.create.mock.calls[0][0].data;
-      expect(data).not.toHaveProperty('recipients');
+      expect(data.recipients.createMany.data).toEqual([]);
       expect(result.recipientsCount).toBe(0);
     });
 
-    it('envia para todos os estudantes sem criar destinatários um a um (STUDENTS)', async () => {
-      prisma.user.count.mockResolvedValue(10);
-      prisma.alert.create.mockResolvedValue(makeAlert({ audience: 'STUDENTS' }));
+    it('envia para todos os estudantes, criando um destinatário para cada um (STUDENTS)', async () => {
+      prisma.user.findMany.mockResolvedValue([{ id: 'u1' }, { id: 'u2' }]);
+      prisma.alert.create.mockResolvedValue(
+        makeAlert({ audience: 'STUDENTS', _count: { recipients: 2 } }),
+      );
 
       const result = await service.create(ADMIN, makeDto({ audience: 'STUDENTS' }));
 
-      expect(prisma.user.count).toHaveBeenCalledWith({ where: { role: 'STUDENT' } });
-      expect(prisma.user.findMany).not.toHaveBeenCalled();
+      expect(prisma.user.findMany).toHaveBeenCalledWith({
+        where: { role: 'STUDENT' },
+        select: { id: true },
+      });
       const data = prisma.alert.create.mock.calls[0][0].data;
-      expect(data).not.toHaveProperty('recipients');
-      expect(result.recipientsCount).toBe('Massa / Global');
+      expect(data.audience).toBe('STUDENTS');
+      expect(data.recipients.createMany.data).toEqual([{ userId: 'u1' }, { userId: 'u2' }]);
+      expect(result.recipientsCount).toBe(2);
     });
 
     it('envia para todos os usuários, sem filtrar por role (ALL)', async () => {
-      prisma.user.count.mockResolvedValue(50);
-      prisma.alert.create.mockResolvedValue(makeAlert({ audience: 'ALL' }));
+      prisma.user.findMany.mockResolvedValue([{ id: 'u1' }, { id: 'u2' }, { id: 'u3' }]);
+      prisma.alert.create.mockResolvedValue(
+        makeAlert({ audience: 'ALL', _count: { recipients: 3 } }),
+      );
 
       const result = await service.create(ADMIN, makeDto({ audience: 'ALL' }));
 
-      expect(prisma.user.count).toHaveBeenCalledWith({ where: {} });
-      expect(result.recipientsCount).toBe('Massa / Global');
+      expect(prisma.user.findMany).toHaveBeenCalledWith({ where: {}, select: { id: true } });
+      const data = prisma.alert.create.mock.calls[0][0].data;
+      expect(data.recipients.createMany.data).toEqual([
+        { userId: 'u1' },
+        { userId: 'u2' },
+        { userId: 'u3' },
+      ]);
+      expect(result.recipientsCount).toBe(3);
     });
 
     it('lança BadRequestException quando não há nenhum usuário na audiência (STAFF)', async () => {
-      prisma.user.count.mockResolvedValue(0);
+      prisma.user.findMany.mockResolvedValue([]);
 
       await expect(service.create(ADMIN, makeDto({ audience: 'STAFF' }))).rejects.toThrow(
         BadRequestException,
       );
-      expect(prisma.user.count).toHaveBeenCalledWith({ where: { role: 'STAFF' } });
+      expect(prisma.user.findMany).toHaveBeenCalledWith({
+        where: { role: 'STAFF' },
+        select: { id: true },
+      });
       expect(prisma.alert.create).not.toHaveBeenCalled();
     });
   });
@@ -230,7 +250,6 @@ describe('AlertsService', () => {
         where: { alertId: { in: ['alert-1', 'alert-2'] }, readAt: { not: null } },
         _count: { _all: true },
       });
-      // Alerta USERS não consulta a tabela de usuários.
       expect(prisma.user.count).not.toHaveBeenCalled();
       expect(prisma.user.findMany).not.toHaveBeenCalled();
 
@@ -437,8 +456,8 @@ describe('AlertsService', () => {
   });
 
   // ------------------------------------------- resolveRecipientIds (privado)
-  // O ramo de audiência coletiva deste método privado não é alcançado por create(),
-  // que só o chama quando audience === 'USERS'. Por isso o chamamos direto.
+  // create() usa este método para todas as audiências; aqui testamos direto o ramo coletivo
+  // (consulta por role, ID vazio e erro quando não há usuários).
   describe('resolveRecipientIds (audiência coletiva)', () => {
     it('devolve os IDs dos usuários do papel da audiência', async () => {
       prisma.user.findMany.mockResolvedValue([{ id: 'a' }, { id: 'b' }]);
