@@ -12,7 +12,6 @@ const RED = '#b91c1c';
 const BANNER_HEIGHT = 240;
 
 const AVATAR_SIZE = 170;
-const RING = 14; // referente ao anel branco elegante. É a espessura
 
 // Essas são algumas constantes necessárias para fazer o formato elegante atrás do avatar.
 // Segue a seguinte lógica: Duas elipses da cor do banner. Uma à esquerda do avatar, e outra à direita do avatar. Bases alinhadas
