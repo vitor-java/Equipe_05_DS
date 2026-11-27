@@ -1,13 +1,51 @@
+
 name: Deploy User Area
 
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            user-area-back/package-lock.json
+            user-area-front/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: user-area-back
+        run: npm ci
+
+      - name: Run backend tests
+        working-directory: user-area-back
+        run: npx vitest run
+
+      - name: Install frontend dependencies
+        working-directory: user-area-front
+        run: npm ci
+
+      - name: Run frontend tests
+        working-directory: user-area-front
+        run: npx vitest run
+
   deploy:
     runs-on: ubuntu-latest
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
       - name: Setup SSH
