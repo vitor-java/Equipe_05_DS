@@ -93,13 +93,6 @@ function RouteMap() {
     };
   }, [auth]);
 
-  // Identifica o papel do utilizador logado para refletir na Navbar (ex: mostrar botão admin se for ADMIN)
-  const userRole = 
-    auth.user?.profile?.role === 'ADMIN' || 
-    (auth.user?.profile?.roles as string[])?.includes('ADMIN') 
-      ? 'ADMIN' 
-      : 'ALUNO';
-
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
