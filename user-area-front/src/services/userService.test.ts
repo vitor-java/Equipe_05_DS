@@ -139,18 +139,17 @@ describe('userService', () => {
         type: 'application/pdf',
       });
 
-      mockFetchApi.mockResolvedValueOnce(
-        new Response(pdf, { status: 200 }),
-      );
+      mockFetchApi.mockResolvedValueOnce({
+        ok: true,
+        blob: () => Promise.resolve(pdf),
+      } as unknown as Response);
 
-      const result = await userService.exportPdf(
-        'joao@cin.ufpe.br',
-      );
+      const result = await userService.exportPdf('joao@cin.ufpe.br');
 
       expect(mockFetchApi).toHaveBeenCalledWith(
         `${API_URL}/users/joao%40cin.ufpe.br/export-pdf`,
       );
-      expect(result).toBeInstanceOf(Blob);
+      expect(result).toBe(pdf);
     });
 
     it('deve lançar erro quando a exportação falhar', async () => {
